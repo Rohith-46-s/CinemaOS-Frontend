@@ -1,0 +1,19 @@
+# CinemaOS Frontend — Replit configuration
+# Runs the Next.js frontend that communicates with the FastAPI backend.
+run = "npm run dev"
+language = "nodejs"
+entrypoint = "src/app/page.tsx"
+
+[nix]
+channel = "24.05"
+
+[env]
+NODE_ENV = "development"
+
+[[ports]]
+localPort = 3000
+externalPort = 80
+
+[deployment]
+run = ["sh", "-c", "npm install && npm run build && npm run start"]
+deploymentTarget = "local"
