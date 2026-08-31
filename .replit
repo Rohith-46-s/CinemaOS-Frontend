@@ -9,6 +9,7 @@ channel = "24.05"
 
 [env]
 NODE_ENV = "development"
+NEXT_PUBLIC_API_BASE_URL = "https://cinemaos-backend-614628729668.us-central1.run.app"
 
 [[ports]]
 localPort = 3000

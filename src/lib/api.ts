@@ -8,6 +8,8 @@ import {
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
 
+console.log("[API] Initialized with API_BASE_URL:", API_BASE_URL);
+
 export class ApiError extends Error {
   status: number;
   constructor(message: string, status: number) {
@@ -36,11 +38,15 @@ async function handleResponse<T>(response: Response): Promise<T> {
 export async function createProject(
   request: CreateProjectRequest
 ): Promise<CreateProjectResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/projects`, {
+  const url = `${API_BASE_URL}/api/projects`;
+  console.log("[API] createProject URL:", url);
+  console.log("[API] createProject request:", request);
+  const response = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(request),
   });
+  console.log("[API] createProject response status:", response.status);
   return handleResponse<CreateProjectResponse>(response);
 }
 
