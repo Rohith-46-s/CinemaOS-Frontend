@@ -12,7 +12,7 @@ jest.mock("next/navigation", () => ({
 jest.mock("@/lib/api", () => ({
   getProjectStatus: jest.fn(),
   resumeProject: jest.fn(),
-  getResultUrl: (id: string) => `http://localhost:8000/api/projects/${id}/result`,
+  getResultUrl: (id: string) => `https://cinemaos-backend-614628729668.us-central1.run.app/api/projects/${id}/result`,
   ApiError: class ApiError extends Error {
     status: number;
     constructor(message: string, status: number) {
@@ -92,7 +92,7 @@ describe("GeneratePage", () => {
       failed_stage: null,
       failed_stage_number: null,
       error: null,
-      result_url: "/api/projects/CINEMA_TEST_001/result",
+      result_url: "https://cinemaos-backend-614628729668.us-central1.run.app/api/projects/CINEMA_TEST_001/result",
     });
 
     render(<GeneratePage />);
@@ -104,7 +104,7 @@ describe("GeneratePage", () => {
     // Check for video element
     const videoEl = document.querySelector("video");
     expect(videoEl).toBeInTheDocument();
-    expect(videoEl?.getAttribute("src")).toBe("http://localhost:8000/api/projects/CINEMA_TEST_001/result");
+    expect(videoEl?.getAttribute("src")).toBe("https://cinemaos-backend-614628729668.us-central1.run.app/api/projects/CINEMA_TEST_001/result");
 
     expect(screen.getByText("Download")).toBeInTheDocument();
     expect(screen.getByText("Create Another")).toBeInTheDocument();
