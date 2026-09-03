@@ -1,8 +1,9 @@
 import { render, screen } from "@testing-library/react";
 import { StageTimeline } from "@/components/stage-timeline";
+import { PIPELINE_STAGES } from "@/lib/types";
 
 describe("StageTimeline", () => {
-  it("renders all 10 pipeline stages", () => {
+  it("renders the 9 active backend stages (Environment Assets excluded)", () => {
     render(
       <StageTimeline
         completedStages={[]}
@@ -11,19 +12,14 @@ describe("StageTimeline", () => {
       />
     );
 
-    expect(screen.getByText("Story")).toBeInTheDocument();
-    expect(screen.getByText("Characters")).toBeInTheDocument();
-    expect(screen.getByText("Character Assets")).toBeInTheDocument();
-    expect(screen.getByText("Environment")).toBeInTheDocument();
-    expect(screen.getByText("Environment Assets")).toBeInTheDocument();
-    expect(screen.getByText("Script")).toBeInTheDocument();
-    expect(screen.getByText("Video")).toBeInTheDocument();
-    expect(screen.getByText("BGM")).toBeInTheDocument();
-    expect(screen.getByText("SFX")).toBeInTheDocument();
-    expect(screen.getByText("Render")).toBeInTheDocument();
+    for (const stage of PIPELINE_STAGES) {
+      expect(screen.getByText(stage.name)).toBeInTheDocument();
+    }
+    expect(screen.queryByText("Environment Assets")).not.toBeInTheDocument();
+    expect(PIPELINE_STAGES).toHaveLength(9);
   });
 
-  it("shows completed stages with check indicators", () => {
+  it("shows the current stage prominently", () => {
     render(
       <StageTimeline
         completedStages={["Story", "Characters", "Script"]}
@@ -31,14 +27,10 @@ describe("StageTimeline", () => {
         failedStage={null}
       />
     );
-
-    // Completed stages should have accessible check indicators
-    const completed = screen.getAllByTestId ? null : null;
-    // Verify the current stage text is present
     expect(screen.getByText("Video")).toBeInTheDocument();
   });
 
-  it("shows failed stage", () => {
+  it("shows the failed stage", () => {
     render(
       <StageTimeline
         completedStages={["Story"]}

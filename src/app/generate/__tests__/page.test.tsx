@@ -1,18 +1,17 @@
-import { render, screen, waitFor, act, fireEvent } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import GeneratePage from "@/app/generate/page";
 
-// Mock next/navigation
 const mockReplace = jest.fn();
 jest.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams("project_id=CINEMA_TEST_001"),
   useRouter: () => ({ push: jest.fn(), replace: mockReplace }),
 }));
 
-// Mock API module
 jest.mock("@/lib/api", () => ({
   getProjectStatus: jest.fn(),
   resumeProject: jest.fn(),
-  getResultUrl: (id: string) => `https://cinemaos-backend-614628729668.us-central1.run.app/api/projects/${id}/result`,
+  deleteProjectMedia: jest.fn(),
+  getResultUrl: (id: string) => `http://localhost:8000/api/projects/${id}/result`,
   ApiError: class ApiError extends Error {
     status: number;
     constructor(message: string, status: number) {
@@ -22,7 +21,7 @@ jest.mock("@/lib/api", () => ({
   },
 }));
 
-import { getProjectStatus, resumeProject } from "@/lib/api";
+import { getProjectStatus, resumeProject, deleteProjectMedia } from "@/lib/api";
 
 describe("GeneratePage", () => {
   beforeEach(() => {
@@ -36,14 +35,15 @@ describe("GeneratePage", () => {
       status: "running",
       prompt: "A boy in a forest.",
       current_stage: "Video",
-      current_stage_number: 7,
-      total_stages: 10,
-      completed_stages: ["Story", "Characters", "Character Assets", "Environment", "Environment Assets", "Script"],
+      current_stage_number: 6,
+      total_stages: 9,
+      completed_stages: ["Story", "Characters", "Script"],
       progress: 0.6,
       failed_stage: null,
       failed_stage_number: null,
       error: null,
       result_url: null,
+      profile: "movie",
     });
 
     render(<GeneratePage />);
@@ -61,14 +61,15 @@ describe("GeneratePage", () => {
       status: "running",
       prompt: "A boy.",
       current_stage: "Video",
-      current_stage_number: 7,
-      total_stages: 10,
+      current_stage_number: 6,
+      total_stages: 9,
       completed_stages: ["Story", "Characters"],
       progress: 0.6,
       failed_stage: null,
       failed_stage_number: null,
       error: null,
       result_url: null,
+      profile: "reel",
     });
 
     render(<GeneratePage />);
@@ -76,7 +77,8 @@ describe("GeneratePage", () => {
     await waitFor(() => {
       expect(screen.getByText("60%")).toBeInTheDocument();
     });
-    expect(screen.getByText(/Stage 7 of 10 — Video/)).toBeInTheDocument();
+    expect(screen.getAllByText("Video").length).toBeGreaterThan(0);
+    expect(screen.getByText("Reel")).toBeInTheDocument();
   });
 
   it("shows completed state with video when status is completed", async () => {
@@ -86,13 +88,24 @@ describe("GeneratePage", () => {
       prompt: "A boy.",
       current_stage: null,
       current_stage_number: null,
-      total_stages: 10,
-      completed_stages: ["Story", "Characters", "Character Assets", "Environment", "Environment Assets", "Script", "Video", "BGM", "SFX", "Render"],
+      total_stages: 9,
+      completed_stages: [
+        "Story",
+        "Characters",
+        "Character Assets",
+        "Environment",
+        "Script",
+        "Video",
+        "BGM",
+        "SFX",
+        "Render",
+      ],
       progress: 1.0,
       failed_stage: null,
       failed_stage_number: null,
       error: null,
-      result_url: "https://cinemaos-backend-614628729668.us-central1.run.app/api/projects/CINEMA_TEST_001/result",
+      result_url: "/api/projects/CINEMA_TEST_001/result",
+      profile: "movie",
     });
 
     render(<GeneratePage />);
@@ -101,33 +114,107 @@ describe("GeneratePage", () => {
       expect(screen.getAllByText("Your cinema is ready").length).toBeGreaterThan(0);
     });
 
-    // Check for video element
     const videoEl = document.querySelector("video");
     expect(videoEl).toBeInTheDocument();
-    expect(videoEl?.getAttribute("src")).toBe("https://cinemaos-backend-614628729668.us-central1.run.app/api/projects/CINEMA_TEST_001/result");
+    expect(videoEl?.getAttribute("src")).toBe(
+      "http://localhost:8000/api/projects/CINEMA_TEST_001/result"
+    );
 
-    expect(screen.getByText("Download")).toBeInTheDocument();
+    expect(screen.getByText("Download Video")).toBeInTheDocument();
     expect(screen.getByText("Create Another")).toBeInTheDocument();
+    expect(screen.getByText("Delete project media")).toBeInTheDocument();
   });
 
-  it("shows failed state with backend error", async () => {
+  it("opens delete confirmation dialog when Delete is clicked", async () => {
+    (getProjectStatus as jest.Mock).mockResolvedValue({
+      project_id: "CINEMA_TEST_001",
+      status: "completed",
+      prompt: "A boy.",
+      current_stage: null,
+      current_stage_number: null,
+      total_stages: 9,
+      completed_stages: ["Render"],
+      progress: 1.0,
+      failed_stage: null,
+      failed_stage_number: null,
+      error: null,
+      result_url: "/api/projects/CINEMA_TEST_001/result",
+      profile: "movie",
+    });
+
+    render(<GeneratePage />);
+    await waitFor(() =>
+      expect(screen.getByText("Delete project media")).toBeInTheDocument()
+    );
+
+    fireEvent.click(screen.getByText("Delete project media"));
+
+    expect(
+      await screen.findByText(/permanently deletes generated media/)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Permanently delete")
+    ).toBeInTheDocument();
+  });
+
+  it("calls deleteProjectMedia with confirm=true when confirmed", async () => {
+    (getProjectStatus as jest.Mock).mockResolvedValue({
+      project_id: "CINEMA_TEST_001",
+      status: "completed",
+      prompt: "A boy.",
+      current_stage: null,
+      current_stage_number: null,
+      total_stages: 9,
+      completed_stages: ["Render"],
+      progress: 1.0,
+      failed_stage: null,
+      failed_stage_number: null,
+      error: null,
+      result_url: "/api/projects/CINEMA_TEST_001/result",
+      profile: "movie",
+    });
+    (deleteProjectMedia as jest.Mock).mockResolvedValue({
+      project_id: "CINEMA_TEST_001",
+      deleted: 4,
+      errors: [],
+      prefix: "cinemaos/projects/CINEMA_TEST_001/",
+    });
+
+    render(<GeneratePage />);
+    await waitFor(() =>
+      expect(screen.getByText("Delete project media")).toBeInTheDocument()
+    );
+
+    fireEvent.click(screen.getByText("Delete project media"));
+    fireEvent.click(await screen.findByText("Permanently delete"));
+
+    await waitFor(() => {
+      expect(deleteProjectMedia).toHaveBeenCalledWith({
+        project_id: "CINEMA_TEST_001",
+        confirm: true,
+      });
+    });
+  });
+
+  it("shows failed state with backend error and current stage", async () => {
     (getProjectStatus as jest.Mock).mockResolvedValue({
       project_id: "CINEMA_TEST_001",
       status: "failed",
       prompt: "A boy.",
       current_stage: null,
       current_stage_number: null,
-      total_stages: 10,
+      total_stages: 9,
       completed_stages: ["Story", "Characters"],
       progress: 0.2,
       failed_stage: "SFX",
-      failed_stage_number: 9,
+      failed_stage_number: 8,
       error: {
         stage: "SFX",
-        stage_number: 9,
+        stage_number: 8,
         reason: "Audio generation failed: quota exceeded",
       },
       result_url: null,
+      profile: "movie",
     });
 
     render(<GeneratePage />);
@@ -136,7 +223,9 @@ describe("GeneratePage", () => {
       expect(screen.getAllByText("Generation stopped").length).toBeGreaterThan(0);
     });
 
-    expect(screen.getByText("Audio generation failed: quota exceeded")).toBeInTheDocument();
+    expect(
+      screen.getByText("Audio generation failed: quota exceeded")
+    ).toBeInTheDocument();
     expect(screen.getByText("Resume Generation")).toBeInTheDocument();
     expect(screen.getByText("Back to Create")).toBeInTheDocument();
   });
@@ -148,26 +237,28 @@ describe("GeneratePage", () => {
       prompt: "A boy.",
       current_stage: null,
       current_stage_number: null,
-      total_stages: 10,
+      total_stages: 9,
       completed_stages: ["Story"],
       progress: 0.1,
       failed_stage: "SFX",
-      failed_stage_number: 9,
-      error: { stage: "SFX", stage_number: 9, reason: "Failed" },
+      failed_stage_number: 8,
+      error: { stage: "SFX", stage_number: 8, reason: "Failed" },
       result_url: null,
+      profile: "movie",
     });
     (resumeProject as jest.Mock).mockResolvedValue({
       project_id: "CINEMA_TEST_001",
       status: "running",
       current_stage: "SFX",
-      current_stage_number: 9,
-      total_stages: 10,
+      current_stage_number: 8,
+      total_stages: 9,
       completed_stages: ["Story"],
       progress: 0.1,
       failed_stage: null,
       failed_stage_number: null,
       error: null,
       result_url: null,
+      profile: "movie",
     });
 
     render(<GeneratePage />);

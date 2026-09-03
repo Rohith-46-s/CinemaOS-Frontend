@@ -4,30 +4,41 @@
 
 @layer base {
   :root {
-    --background: 222 47% 5%;
-    --foreground: 210 40% 98%;
+    /* Surface tokens — near-black with subtle warm tint, like Google AI surfaces. */
+    --background: 220 24% 5%;
+    --foreground: 220 14% 96%;
 
-    --card: 222 47% 7%;
-    --card-foreground: 210 40% 98%;
+    --card: 220 22% 8%;
+    --card-foreground: 220 14% 96%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222 47% 11%;
+    --popover: 220 22% 8%;
+    --popover-foreground: 220 14% 96%;
 
-    --secondary: 217 33% 17%;
-    --secondary-foreground: 210 40% 98%;
+    --primary: 220 14% 96%;
+    --primary-foreground: 220 24% 5%;
 
-    --muted: 217 33% 17%;
-    --muted-foreground: 215 20% 65%;
+    --secondary: 220 16% 13%;
+    --secondary-foreground: 220 14% 96%;
 
-    --accent: 217 33% 17%;
-    --accent-foreground: 210 40% 98%;
+    --muted: 220 16% 13%;
+    --muted-foreground: 220 10% 65%;
 
-    --destructive: 0 62% 50%;
-    --destructive-foreground: 210 40% 98%;
+    --accent: 220 16% 14%;
+    --accent-foreground: 220 14% 96%;
 
-    --border: 217 33% 17%;
-    --input: 217 33% 17%;
-    --ring: 212 80% 70%;
+    --destructive: 0 70% 48%;
+    --destructive-foreground: 220 14% 96%;
+
+    --success: 152 60% 45%;
+    --success-foreground: 220 14% 98%;
+
+    --border: 220 16% 15%;
+    --input: 220 16% 13%;
+    --ring: 217 91% 60%;
+
+    /* Restrained accent — Google blue used sparingly. */
+    --brand: 217 91% 60%;
+    --brand-foreground: 220 14% 98%;
 
     --radius: 0.75rem;
   }
@@ -37,17 +48,51 @@
   * {
     @apply border-border;
   }
+  html,
   body {
     @apply bg-background text-foreground;
-    font-feature-settings: "rlig" 1, "calt" 1;
+    font-feature-settings: "rlig" 1, "calt" 1, "ss01" 1;
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    background-color: hsl(var(--background));
+    background-image: radial-gradient(
+        ellipse 80% 60% at 50% -10%,
+        hsl(217 50% 18% / 0.35) 0%,
+        transparent 60%
+      ),
+      radial-gradient(
+        ellipse 60% 50% at 100% 100%,
+        hsl(220 40% 14% / 0.4) 0%,
+        transparent 60%
+      );
+    background-attachment: fixed;
   }
 }
 
 @layer utilities {
   .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-white via-blue-100 to-blue-300;
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(
+      180deg,
+      hsl(var(--foreground)) 0%,
+      hsl(var(--muted-foreground)) 100%
+    );
   }
-  .bg-cinematic {
-    background: radial-gradient(ellipse at top, hsl(222 47% 9%) 0%, hsl(222 47% 4%) 70%);
+  .surface {
+    background-color: hsl(var(--card) / 0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid hsl(var(--border) / 0.6);
+  }
+  .surface-strong {
+    background-color: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+  }
+  .focus-ring {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+  }
+  .hairline {
+    border: 1px solid hsl(var(--border) / 0.7);
   }
 }

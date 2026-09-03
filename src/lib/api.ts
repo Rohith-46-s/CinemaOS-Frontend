@@ -3,12 +3,12 @@ import {
   CreateProjectResponse,
   ProjectStatus,
   ProjectState,
+  DeleteProjectRequest,
+  DeleteProjectResponse,
 } from "./types";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
-
-console.log("[API] Initialized with API_BASE_URL:", API_BASE_URL);
 
 export class ApiError extends Error {
   status: number;
@@ -25,7 +25,10 @@ async function handleResponse<T>(response: Response): Promise<T> {
     try {
       const data = await response.json();
       if (data.detail) {
-        message = typeof data.detail === "string" ? data.detail : JSON.stringify(data.detail);
+        message =
+          typeof data.detail === "string"
+            ? data.detail
+            : JSON.stringify(data.detail);
       }
     } catch {
       // ignore JSON parse errors
@@ -38,15 +41,11 @@ async function handleResponse<T>(response: Response): Promise<T> {
 export async function createProject(
   request: CreateProjectRequest
 ): Promise<CreateProjectResponse> {
-  const url = `${API_BASE_URL}/api/projects`;
-  console.log("[API] createProject URL:", url);
-  console.log("[API] createProject request:", request);
-  const response = await fetch(url, {
+  const response = await fetch(`${API_BASE_URL}/api/projects`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(request),
   });
-  console.log("[API] createProject response status:", response.status);
   return handleResponse<CreateProjectResponse>(response);
 }
 
@@ -59,9 +58,7 @@ export async function getProjectStatus(
   return handleResponse<ProjectStatus>(response);
 }
 
-export async function getProject(
-  projectId: string
-): Promise<ProjectState> {
+export async function getProject(projectId: string): Promise<ProjectState> {
   const response = await fetch(
     `${API_BASE_URL}/api/projects/${encodeURIComponent(projectId)}`
   );
@@ -74,6 +71,20 @@ export async function resumeProject(projectId: string): Promise<ProjectStatus> {
     { method: "POST" }
   );
   return handleResponse<ProjectStatus>(response);
+}
+
+export async function deleteProjectMedia(
+  request: DeleteProjectRequest
+): Promise<DeleteProjectResponse> {
+  const response = await fetch(
+    `${API_BASE_URL}/api/projects/${encodeURIComponent(request.project_id)}/delete`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ project_id: request.project_id, confirm: true }),
+    }
+  );
+  return handleResponse<DeleteProjectResponse>(response);
 }
 
 export function getResultUrl(projectId: string): string {

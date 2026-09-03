@@ -4,13 +4,13 @@ import {
   getProject,
   resumeProject,
   getResultUrl,
+  deleteProjectMedia,
   ApiError,
   API_BASE_URL,
 } from "@/lib/api";
 
 describe("API base URL", () => {
   it("uses NEXT_PUBLIC_API_BASE_URL when set", () => {
-    // The env var is set in .env.local to http://localhost:8000
     expect(API_BASE_URL).toBe("http://localhost:8000");
   });
 
@@ -21,13 +21,14 @@ describe("API base URL", () => {
 });
 
 describe("createProject", () => {
-  it("sends prompt and scenes to the backend", async () => {
+  it("sends prompt, scenes, and profile to the backend", async () => {
     const mockFetch = jest.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
         project_id: "CINEMA_20260827_TEST",
         status: "running",
         message: "Generation started.",
+        profile: "reel",
       }),
     });
     global.fetch = mockFetch;
@@ -35,6 +36,7 @@ describe("createProject", () => {
     const result = await createProject({
       prompt: "A boy in a forest.",
       scenes: 2,
+      profile: "reel",
     });
 
     expect(mockFetch).toHaveBeenCalledWith(
@@ -42,10 +44,34 @@ describe("createProject", () => {
       expect.objectContaining({
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: "A boy in a forest.", scenes: 2 }),
+        body: JSON.stringify({
+          prompt: "A boy in a forest.",
+          scenes: 2,
+          profile: "reel",
+        }),
       })
     );
     expect(result.project_id).toBe("CINEMA_20260827_TEST");
+    expect(result.profile).toBe("reel");
+  });
+
+  it("does not include profile key when not provided (backend defaults to movie)", async () => {
+    const mockFetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        project_id: "CINEMA_X",
+        status: "running",
+        message: "Generation started.",
+        profile: "movie",
+      }),
+    });
+    global.fetch = mockFetch;
+
+    await createProject({ prompt: "Hi", scenes: 2 });
+    const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+    expect(body.profile).toBeUndefined();
+    // The backend's default is "movie" — the frontend just omits the key
+    // so the backend can default to movie (or any future default).
   });
 });
 
@@ -57,14 +83,15 @@ describe("getProjectStatus", () => {
         project_id: "CINEMA_TEST",
         status: "running",
         current_stage: "Video",
-        current_stage_number: 7,
-        total_stages: 10,
+        current_stage_number: 6,
+        total_stages: 9,
         completed_stages: ["Story", "Characters"],
         progress: 0.6,
         failed_stage: null,
         failed_stage_number: null,
         error: null,
         result_url: null,
+        profile: "movie",
       }),
     });
     global.fetch = mockFetch;
@@ -76,6 +103,7 @@ describe("getProjectStatus", () => {
     expect(result.status).toBe("running");
     expect(result.current_stage).toBe("Video");
     expect(result.progress).toBe(0.6);
+    expect(result.profile).toBe("movie");
   });
 });
 
@@ -106,8 +134,8 @@ describe("resumeProject", () => {
         project_id: "CINEMA_TEST",
         status: "running",
         current_stage: "SFX",
-        current_stage_number: 9,
-        total_stages: 10,
+        current_stage_number: 8,
+        total_stages: 9,
         completed_stages: ["Story"],
         progress: 0.1,
         failed_stage: null,
@@ -124,6 +152,40 @@ describe("resumeProject", () => {
       expect.objectContaining({ method: "POST" })
     );
     expect(result.status).toBe("running");
+  });
+});
+
+describe("deleteProjectMedia", () => {
+  it("POSTs to /delete with confirm=true in the body", async () => {
+    const mockFetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        project_id: "CINEMA_TEST",
+        deleted: 4,
+        errors: [],
+        prefix: "cinemaos/projects/CINEMA_TEST/",
+      }),
+    });
+    global.fetch = mockFetch;
+
+    const result = await deleteProjectMedia({
+      project_id: "CINEMA_TEST",
+      confirm: true,
+    });
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      "http://localhost:8000/api/projects/CINEMA_TEST/delete",
+      expect.objectContaining({
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          project_id: "CINEMA_TEST",
+          confirm: true,
+        }),
+      })
+    );
+    expect(result.deleted).toBe(4);
+    expect(result.prefix).toBe("cinemaos/projects/CINEMA_TEST/");
   });
 });
 

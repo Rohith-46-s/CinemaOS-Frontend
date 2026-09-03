@@ -1,15 +1,11 @@
 # CinemaOS Frontend — Replit configuration
-# This is a standalone Next.js frontend repository.
-# The FastAPI backend is deployed separately on Google Cloud Run.
 run = "npm run dev"
-language = "nodejs"
-entrypoint = "src/app/page.tsx"
 
 [nix]
-channel = "24.05"
+channel = "stable-24_05"
 
 [env]
-NEXT_PUBLIC_API_BASE_URL = "https://cinemaos-backend-614628729668.us-central1.run.app"
+NODE_ENV = "development"
 
 [[ports]]
 localPort = 3000
@@ -17,4 +13,4 @@ externalPort = 80
 
 [deployment]
 run = ["sh", "-c", "npm install && npm run build && npm run start"]
-deploymentTarget = "local"
+deploymentTarget = "cloudrun"

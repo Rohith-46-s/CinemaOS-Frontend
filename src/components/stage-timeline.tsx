@@ -19,80 +19,87 @@ export function StageTimeline({
   const completedSet = new Set(completedStages);
 
   return (
-    <div className="space-y-1">
+    <ol
+      aria-label="Generation pipeline"
+      className="relative space-y-0.5"
+    >
       {PIPELINE_STAGES.map((stage, idx) => {
         const isCompleted = completedSet.has(stage.name);
         const isRunning = currentStage === stage.name && !isCompleted;
         const isFailed = failedStage === stage.name;
         const isPending = !isCompleted && !isRunning && !isFailed;
+        const isLast = idx === PIPELINE_STAGES.length - 1;
 
         return (
-          <motion.div
+          <motion.li
             key={stage.name}
-            initial={{ opacity: 0, x: -10 }}
+            initial={{ opacity: 0, x: -6 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: idx * 0.04, duration: 0.3 }}
+            transition={{ delay: idx * 0.03, duration: 0.25 }}
             className={cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors",
-              isRunning && "bg-accent/50",
+              "relative flex items-center gap-3 rounded-md px-3 py-2.5 transition-colors",
+              isRunning && "bg-accent/40",
               isFailed && "bg-destructive/10"
             )}
           >
-            {/* Status indicator */}
-            <div className="flex-shrink-0 w-7 h-7 flex items-center justify-center">
+            {/* Connector line */}
+            {!isLast && (
+              <span
+                aria-hidden
+                className={cn(
+                  "absolute left-[19px] top-[34px] bottom-[-6px] w-px",
+                  isCompleted || isRunning
+                    ? "bg-foreground/20"
+                    : "bg-border"
+                )}
+              />
+            )}
+
+            <div className="relative flex-shrink-0 w-5 h-5 flex items-center justify-center">
               {isCompleted ? (
-                <motion.div
+                <motion.span
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
-                  className="w-6 h-6 rounded-full bg-green-500/20 flex items-center justify-center"
+                  transition={{ duration: 0.2 }}
+                  className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-success/15 text-success"
                 >
-                  <Check className="h-3.5 w-3.5 text-green-400" />
-                </motion.div>
+                  <Check className="h-3 w-3" strokeWidth={2.5} />
+                </motion.span>
               ) : isRunning ? (
-                <Loader2 className="h-5 w-5 text-blue-300 animate-spin-slow" />
+                <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-foreground/10">
+                  <Loader2 className="h-3 w-3 text-foreground/90 animate-spin" />
+                </span>
               ) : isFailed ? (
-                <div className="w-6 h-6 rounded-full bg-destructive/20 flex items-center justify-center">
-                  <X className="h-3.5 w-3.5 text-destructive" />
-                </div>
+                <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-destructive/15 text-destructive">
+                  <X className="h-3 w-3" strokeWidth={2.5} />
+                </span>
               ) : (
-                <Circle className="h-4 w-4 text-muted-foreground/40" />
+                <Circle
+                  className="h-3 w-3 text-muted-foreground/40"
+                  strokeWidth={1.5}
+                />
               )}
             </div>
 
-            {/* Stage number + name */}
-            <div className="flex items-center gap-2.5 min-w-0">
-              <span
-                className={cn(
-                  "text-xs font-mono w-5 text-right flex-shrink-0",
-                  isCompleted
-                    ? "text-green-400/80"
-                    : isRunning
-                    ? "text-blue-300"
-                    : isFailed
-                    ? "text-destructive"
-                    : "text-muted-foreground/60"
-                )}
-              >
-                {String(stage.number).padStart(2, "0")}
+            <span
+              className={cn(
+                "text-sm font-medium truncate",
+                isCompleted && "text-foreground/80",
+                isRunning && "text-foreground",
+                isFailed && "text-destructive",
+                isPending && "text-muted-foreground"
+              )}
+            >
+              {stage.name}
+            </span>
+            {isRunning && (
+              <span className="ml-auto text-[10px] uppercase tracking-wider text-muted-foreground">
+                Running
               </span>
-              <span
-                className={cn(
-                  "text-sm font-medium truncate",
-                  isCompleted
-                    ? "text-foreground/90"
-                    : isRunning
-                    ? "text-foreground"
-                    : isFailed
-                    ? "text-destructive"
-                    : "text-muted-foreground"
-                )}
-              >
-                {stage.name}
-              </span>
-            </div>
-          </motion.div>
+            )}
+          </motion.li>
         );
       })}
-    </div>
+    </ol>
   );
 }
